@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f3f8ff" />
+  <meta name="description" content="Don’t let traffic cancel the plans. Find the spot that’s a fair drive for everyone, with live traffic." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>Between</title>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Between home">
+      <span class="brand-mark">B</span>
+      <span>Between</span>
+    </a>
+    <button class="ghost-button install-button" id="installButton">Install app</button>
+  </header>
+
+  <main>
+    <section class="hero" id="homeScreen">
+      <div class="eyebrow">NO ONE GETS STUCK WITH THE LONG DRIVE</div>
+      <h1>Meet in the middle.<br /><em>For real.</em></h1>
+      <p>Don’t let a busy Friday keep you from your people. Between checks live traffic from everyone’s door and finds the spot that’s fair for all of you.</p>
+      <div class="hero-actions">
+        <button class="primary-button" id="startButton">Start a Between <span>→</span></button>
+        <button class="text-button" id="demoButton">Try the LA demo</button>
+      </div>
+      <div class="mini-proof">
+        <div><strong>2–6</strong><span>people</span></div>
+        <div><strong>Real</strong><span>drive times</span></div>
+        <div><strong>One</strong><span>fair choice</span></div>
+      </div>
+      <div class="orbit" aria-hidden="true">
+        <div class="route route-a"></div><div class="route route-b"></div><div class="route route-c"></div>
+        <span class="avatar avatar-a">M</span><span class="avatar avatar-b">S</span><span class="avatar avatar-c">A</span>
+        <span class="meeting-pin">★</span>
+      </div>
+    </section>
+
+    <section class="workspace hidden" id="plannerScreen">
+      <div class="progress-wrap">
+        <button class="icon-button" id="backButton" aria-label="Go back">←</button>
+        <div class="progress-copy"><span id="stepLabel">STEP 1 OF 3</span><strong id="stepTitle">Who’s meeting?</strong></div>
+        <div class="progress-track"><span id="progressBar"></span></div>
+      </div>
+
+      <form id="plannerForm">
+        <div class="step" data-step="1">
+          <p class="section-intro">Add each person and where they’ll be leaving from. Addresses are only used to calculate this meetup.</p>
+          <div id="peopleList" class="people-list"></div>
+          <button type="button" class="add-button" id="addPersonButton">＋ Add another person</button>
+        </div>
+
+        <div class="step hidden" data-step="2">
+          <p class="section-intro">What kind of place should everyone meet at?</p>
+          <div class="category-grid" id="categoryGrid">
+            <button type="button" data-category="cafe" class="category selected"><span>☕</span>Coffee</button>
+            <button type="button" data-category="restaurant" class="category"><span>🍝</span>Dinner</button>
+            <button type="button" data-category="bar" class="category"><span>🍸</span>Drinks</button>
+            <button type="button" data-category="library" class="category"><span>📚</span>Study</button>
+            <button type="button" data-category="park" class="category"><span>🌿</span>Outdoors</button>
+            <button type="button" data-category="fast_food" class="category"><span>✨</span>Anything casual</button>
+          </div>
+          <div class="filter-grid">
+            <label id="cuisineLabel" class="hidden">Cuisine<select id="cuisineFilter"><option value="restaurants">All food</option><option value="italian">Italian</option><option value="mexican">Mexican</option><option value="japanese">Japanese</option><option value="chinese">Chinese</option><option value="korean">Korean</option><option value="thai">Thai</option><option value="indpak">Indian</option><option value="mediterranean">Mediterranean</option><option value="newamerican">American</option><option value="vegan">Vegan</option><option value="seafood">Seafood</option><option value="steak">Steakhouses</option></select></label>
+            <label>Price<select id="priceFilter"><option value="">Any price</option><option value="1">$ · Budget</option><option value="1,2">$–$$ · Affordable</option><option value="2,3">$$–$$$ · Mid-range</option><option value="3,4">$$$–$$$$ · High-end</option><option value="4">$$$$ · Luxury</option></select></label>
+            <label>Prioritize<select id="sortFilter"><option value="best_match">Best match</option><option value="rating">Highest rated</option><option value="review_count">Most reviewed</option><option value="distance">Closest to fair area</option></select></label>
+            <label class="open-filter"><input type="checkbox" id="openNowFilter" /> Open now</label>
+          </div>
+          <div class="mode-row"><span>Travel mode</span><strong>🚗 Driving</strong><small>Walking, cycling, and transit are planned next.</small></div>
+        </div>
+
+        <div class="step hidden" data-step="3">
+          <p class="section-intro">Between minimizes the difference between the longest and shortest drive, then ranks practical places nearby.</p>
+          <div class="review-card" id="reviewCard"></div>
+          <label class="privacy-check"><input type="checkbox" checked /> Keep exact starting addresses private in shared results</label>
+        </div>
+
+        <div class="form-error" id="formError" role="alert"></div>
+        <button type="submit" class="primary-button wide" id="nextButton">Continue <span>→</span></button>
+      </form>
+    </section>
+
+    <section class="loading-screen hidden" id="loadingScreen" aria-live="polite">
+      <div class="pulse-map"><span></span><span></span><span></span><b>★</b></div>
+      <h2>Finding everyone’s sweet spot…</h2>
+      <p id="loadingMessage">Checking each starting location</p>
+    </section>
+
+    <section class="results hidden" id="resultsScreen">
+      <div class="results-heading">
+        <div><span class="eyebrow">YOUR BEST BETWEEN</span><h2>Fair places everyone can reach</h2></div>
+        <button class="ghost-button" id="newSearchButton">New search</button>
+      </div>
+      <div id="map" class="map" aria-label="Map of recommended meeting places"></div>
+      <div class="result-layout">
+        <div id="resultCards" class="result-cards"></div>
+        <aside class="fairness-panel">
+          <span class="eyebrow">HOW WE RANK</span>
+          <h3>Fairness first</h3>
+          <p>The lower the travel-time gap, the more balanced the meetup.</p>
+          <div class="formula"><span>Longest drive</span><b>−</b><span>Shortest drive</span><b>=</b><strong>Gap</strong></div>
+          <button class="secondary-button" id="shareButton">Share to Messages or…</button>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <template id="personTemplate">
+    <div class="person-card">
+      <div class="person-number"></div>
+      <div class="person-fields">
+        <label>Name<input class="person-name" autocomplete="name" placeholder="Name" required /></label>
+        <label class="address-field">Starting location<input class="person-address" autocomplete="off" placeholder="Start typing an address or neighborhood" required /><div class="address-suggestions" role="listbox"></div></label>
+      </div>
+      <button type="button" class="remove-person" aria-label="Remove person">×</button>
+    </div>
+  </template>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"></script>
+  <script src="app.js" type="module"></script>
+</body>
+</html>
